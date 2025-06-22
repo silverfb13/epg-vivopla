@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Clonar repositório iptv-org/epg
         run: git clone --depth=1 https://github.com/iptv-org/epg.git
@@ -31,7 +33,7 @@ jobs:
           cd epg
           npm run grab --- --site=vivoplay.com.br --output=guide.xml
 
-      - name: Copiar guide.xml para raiz
+      - name: Copiar guide.xml para a raiz
         run: cp epg/guide.xml .
 
       - name: Configurar git
@@ -39,9 +41,10 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-      - name: Commit e Push (usando token direto)
+      - name: Commit e Push
+        env:
+          TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          git remote set-url origin https://x-access-token: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@github.com/${{ github.repository }}.git
           git add guide.xml
-          git commit -m "Atualização automática - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Sem mudanças"
-          git push origin HEAD:master
+          git commit -m "EPG atualizado automaticamente - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Nenhuma mudança"
+          git push https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git HEAD:master
