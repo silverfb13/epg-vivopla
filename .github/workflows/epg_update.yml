@@ -2,7 +2,7 @@ name: Atualizar EPG VivoPlay a cada hora
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Executa a cada 1 hora
+    - cron: '0 * * * *'  # A cada 1 hora
   workflow_dispatch:
 
 jobs:
@@ -13,21 +13,35 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
+      - name: Clonar repositório iptv-org/epg
+        run: git clone --depth=1 https://github.com/iptv-org/epg.git
+
       - name: Instalar Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Instalar dependências
-        run: npm install
+        run: |
+          cd epg
+          npm install
 
-      - name: Gerar novo EPG (somente VivoPlay)
-        run: npm run grab --- --site=vivoplay.com.br --output=guide.xml
+      - name: Gerar EPG VivoPlay
+        run: |
+          cd epg
+          npm run grab --- --site=vivoplay.com.br --output=guide.xml
 
-      - name: Commit e Push
+      - name: Copiar guide.xml para raiz
+        run: cp epg/guide.xml .
+
+      - name: Configurar git
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
+      - name: Commit e Push (usando token direto)
+        run: |
+          git remote set-url origin https://x-access-token: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@github.com/${{ github.repository }}.git
           git add guide.xml
           git commit -m "Atualização automática - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Sem mudanças"
-          git push
+          git push origin HEAD:master
